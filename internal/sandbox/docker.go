@@ -70,7 +70,8 @@ func (d Docker) Run(ctx context.Context, spec Spec, out io.Writer) (Result, erro
 	}
 	args = append(args,
 		"--mount", fmt.Sprintf("type=bind,src=%s,dst=/src,ro", src),
-		"--tmpfs", "/work:exec",
+		// mode=1777 so the unprivileged --user can write the workdir + tool caches.
+		"--tmpfs", "/work:exec,mode=1777",
 		spec.Image, "sh", "-c", script(spec.Cmd),
 	)
 
@@ -110,5 +111,8 @@ func (d Docker) Run(ctx context.Context, spec Spec, out io.Writer) (Result, erro
 // command there. Keeping the copy inside the container (rather than a writable
 // bind mount) is what lets the host checkout stay read-only.
 func script(cmd string) string {
-	return "cp -a /src/. /work/ 2>/dev/null; cd /work && " + cmd
+	// HOME points at the writable workdir so tools that cache under $HOME (go
+	// build cache, npm, pip) work even when running as an unprivileged --user.
+	return "export HOME=/work XDG_CACHE_HOME=/work/.cache; " +
+		"cp -a /src/. /work/ 2>/dev/null; cd /work && " + cmd
 }
