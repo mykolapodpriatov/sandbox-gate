@@ -1,0 +1,34 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest # ships with a Docker daemon, so the integration tests run for real
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - run: go vet ./...
+      - run: go build ./...
+      - run: go test -count=1 ./...
+
+  dogfood:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: gate the passing example (must succeed)
+        run: go run ./cmd/sandbox-gate run --dir examples/passing --net
+      - name: gate the buggy example (must be caught)
+        run: |
+          if go run ./cmd/sandbox-gate run --dir examples/failing --net; then
+            echo "::error::sandbox-gate let a failing suite through"; exit 1
+          fi
+          echo "sandbox-gate correctly failed the buggy example"

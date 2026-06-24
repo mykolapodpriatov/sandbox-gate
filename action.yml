@@ -1,0 +1,31 @@
+name: sandbox-gate
+description: Run a test suite in an isolated, ephemeral sandbox and fail the job if it fails.
+branding:
+  icon: shield
+  color: purple
+inputs:
+  dir:   { description: worktree to validate, default: "." }
+  image: { description: base image (auto-detected if empty), required: false, default: "" }
+  cmd:   { description: test command (auto-detected if empty), required: false, default: "" }
+  net:   { description: allow network egress inside the sandbox, default: "false" }
+  out:   { description: write the JSON result to this path, required: false, default: "" }
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version: "1.26"
+    - shell: bash
+      env:
+        IN_DIR:   ${{ inputs.dir }}
+        IN_IMAGE: ${{ inputs.image }}
+        IN_CMD:   ${{ inputs.cmd }}
+        IN_NET:   ${{ inputs.net }}
+        IN_OUT:   ${{ inputs.out }}
+      run: |
+        args=(run --dir "$IN_DIR")
+        [ -n "$IN_IMAGE" ] && args+=(--image "$IN_IMAGE")
+        [ -n "$IN_CMD" ]   && args+=(--cmd "$IN_CMD")
+        [ "$IN_NET" = "true" ] && args+=(--net)
+        [ -n "$IN_OUT" ]   && args+=(--out "$IN_OUT")
+        go run github.com/mykolapodpriatov/sandbox-gate/cmd/sandbox-gate@latest "${args[@]}"
