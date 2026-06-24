@@ -8,8 +8,8 @@ jobs:
   test:
     runs-on: ubuntu-latest # ships with a Docker daemon, so the integration tests run for real
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
       - run: go vet ./...
@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
       - name: gate the passing example (must succeed)
